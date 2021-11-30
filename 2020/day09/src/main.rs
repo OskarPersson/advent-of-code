@@ -1,5 +1,3 @@
-use std::fs;
-
 fn find_invalid_number(numbers: &Vec<usize>, preamble_length: usize) -> (usize, usize) {
     let (idx, number) = numbers
         .iter()
@@ -52,8 +50,7 @@ fn part2(input: &Vec<usize>, preamble_length: usize) -> usize {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
     let numbers = parse_input(&contents);
 
     let part1 = part1(&numbers, 25);

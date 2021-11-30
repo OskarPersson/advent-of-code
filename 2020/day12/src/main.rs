@@ -1,5 +1,3 @@
-use std::fs;
-
 enum Direction {
     North,
     South,
@@ -142,8 +140,7 @@ fn part1(input: Vec<Instruction>) -> i32 {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
 
     let part1 = part1(parse_input(&contents));
     println!("part1: {}", part1);

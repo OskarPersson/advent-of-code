@@ -1,5 +1,4 @@
 use core::panic;
-use std::fs;
 
 use num::integer::Integer;
 
@@ -47,8 +46,7 @@ fn calc_seat_id(seat: &str) -> usize {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
 
     let part1 = contents.lines().map(calc_seat_id).max().unwrap();
     println!("part1: {}", part1);

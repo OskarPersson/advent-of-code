@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs;
 
 fn contains_bag(map: &HashMap<&str, Vec<(&str, usize)>>, bag: &str) -> bool {
     match map.get(bag) {
@@ -79,8 +78,7 @@ fn part2(input: &str) -> usize {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
 
     let part1 = part1(&contents);
     println!("part1: {}", part1);

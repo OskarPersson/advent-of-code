@@ -1,4 +1,3 @@
-use std::fs;
 
 fn parse_line(line: &str) -> (&str, i32) {
     let full_cmd: Vec<&str> = line.split(' ').collect();
@@ -72,8 +71,7 @@ fn part2(input: &str) -> i32 {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
 
     let part1 = part1(&contents);
     println!("part1: {}", part1);

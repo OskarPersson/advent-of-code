@@ -1,5 +1,3 @@
-use std::fs;
-
 fn part1(sum: i32, entries: &Vec<i32>) -> Option<i32> {
     for (idx_i, i) in entries.iter().enumerate() {
         for j in entries.iter().skip(idx_i + 1) {
@@ -25,13 +23,12 @@ fn part2(sum: i32, entries: &Vec<i32>) -> Option<i32> {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
     let entries = contents
         .lines()
         .map(|line| line.parse::<i32>().unwrap())
         .collect();
-        
+
     let part1 = part1(2020, &entries);
     if let Some(part1) = part1 {
         println!("part1: {}", part1);

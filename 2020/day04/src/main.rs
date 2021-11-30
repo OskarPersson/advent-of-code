@@ -1,5 +1,4 @@
 use regex::Regex;
-use std::fs;
 
 fn part1(contents: &str) -> usize {
     contents
@@ -71,8 +70,7 @@ fn part2(contents: &str) -> usize {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
 
     println!("Part 1: {}", part1(&contents));
     println!("Part 2: {}", part2(&contents));

@@ -1,9 +1,7 @@
 use regex::Regex;
-use std::fs;
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
     let re = Regex::new(r"^(\d+)-(\d+) ([a-z]): ([a-z]*)$").unwrap();
     let part1 = contents
         .lines()

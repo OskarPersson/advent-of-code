@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap};
 
 fn parse_input(input: &str) -> Vec<i64> {
     input.lines().map(|x| x.parse::<i64>().unwrap()).collect()
@@ -66,8 +66,7 @@ fn part2(input: &Vec<i64>) -> i64 {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
     let numbers = parse_input(&contents);
 
     let part1 = part1(&numbers);

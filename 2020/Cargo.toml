@@ -1,3 +1,10 @@
+[workspace]
+members = [
+  ".",
+  "day*",
+]
+
+
 [package]
 name = "aoc2020"
 version = "0.1.0"

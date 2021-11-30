@@ -1,5 +1,4 @@
 use core::panic;
-use std::fs;
 
 #[derive(Clone, Copy, PartialEq)]
 enum Position {
@@ -276,8 +275,7 @@ fn part2(input: SeatGrid) -> usize {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
 
     let part1 = part1(parse_input(&contents));
     println!("part1: {}", part1);

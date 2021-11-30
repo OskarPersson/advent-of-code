@@ -1,5 +1,3 @@
-use std::fs;
-
 fn tree_counter(contents: &str, right: usize, down: usize) -> usize {
     let line_len = contents.lines().nth(0).unwrap().len();
     let mut pos = 0;
@@ -27,8 +25,7 @@ fn tree_counter(contents: &str, right: usize, down: usize) -> usize {
 }
 
 fn main() {
-    let filename = "input.txt";
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    let contents = include_str!("../input.txt");
 
     let part1 = tree_counter(&contents, 3, 1);
     println!("part1: {}", part1);
