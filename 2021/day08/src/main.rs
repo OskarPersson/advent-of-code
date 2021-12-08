@@ -34,7 +34,7 @@ fn part1(contents: &str) -> i32 {
 
 fn sort_chars(s: &str) -> String {
     let mut v = s.chars().collect::<Vec<char>>();
-    v.sort();
+    v.sort_unstable();
     v.into_iter().collect()
 }
 
@@ -61,14 +61,14 @@ fn parse_line(signal_patterns: Vec<&str>, output: Vec<&str>) -> i32 {
             && four
                 .chars()
                 .into_iter()
-                .all(|item| s.chars().collect::<Vec<char>>().contains(&item))
+                .all(|item| s.chars().any(|x| x == item))
     });
     let zero = extract_patterns(&mut signal_patterns, |s: &String| {
         s.chars().count() == 6
             && one
                 .chars()
                 .into_iter()
-                .all(|item| s.chars().collect::<Vec<char>>().contains(&item))
+                .all(|item| s.chars().any(|x| x == item))
     });
     let six = extract_patterns(&mut signal_patterns, |s: &String| s.chars().count() == 6);
     let three = extract_patterns(&mut signal_patterns, |s: &String| {
@@ -76,13 +76,13 @@ fn parse_line(signal_patterns: Vec<&str>, output: Vec<&str>) -> i32 {
             && one
                 .chars()
                 .into_iter()
-                .all(|item| s.chars().collect::<Vec<char>>().contains(&item))
+                .all(|item| s.chars().any(|x| x == item))
     });
     let five = extract_patterns(&mut signal_patterns, |s: &String| {
         s.chars().count() == 5
             && s.chars()
                 .into_iter()
-                .all(|item| nine.chars().collect::<Vec<char>>().contains(&item))
+                .all(|item| nine.chars().any(|x| x == item))
     });
     let two = extract_patterns(&mut signal_patterns, |s: &String| s.chars().count() == 5);
 
