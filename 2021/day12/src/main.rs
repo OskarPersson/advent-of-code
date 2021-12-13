@@ -7,19 +7,11 @@ fn parse_input(contents: &str) -> System {
         .collect()
 }
 
-fn can_add_small_node(path: &Vec<&str>, allowed_small_node_visits: usize) -> bool {
-    let mut small_nodes: Vec<&&str> = path.iter().filter(|n| ***n == n.to_lowercase()).collect();
-    small_nodes.sort();
-    let len_before = small_nodes.len();
-    small_nodes.dedup();
-    len_before - small_nodes.len() < allowed_small_node_visits
-}
-
 fn visit_adjacent_nodes<'a>(
     system: &'a System,
     path: &mut Vec<&'a str>,
     paths: &mut Vec<Vec<&'a str>>,
-    allowed_small_node_visits: usize,
+    duplicate_small_node: bool,
 ) {
     let node = *path.clone().last().unwrap();
     for (_, adj_dst) in system
@@ -33,19 +25,24 @@ fn visit_adjacent_nodes<'a>(
                 None
             }
         })
-        .filter(|(_, dst)| {
-            **dst != "start"
-                && !(***dst == dst.to_lowercase()
-                    && !can_add_small_node(path, allowed_small_node_visits))
-        })
+        .filter(|(_, dst)| **dst != "start")
     {
+        let mut dup = duplicate_small_node;
+        if **adj_dst == adj_dst.to_lowercase() && path.contains(adj_dst) {
+            if dup {
+                dup = false;
+            } else {
+                continue;
+            }
+        }
+
         let mut new_path = path.clone();
         new_path.push(adj_dst);
 
         if *adj_dst == "end" {
             paths.push(new_path);
         } else {
-            visit_adjacent_nodes(system, &mut new_path, paths, allowed_small_node_visits)
+            visit_adjacent_nodes(system, &mut new_path, paths, dup)
         }
     }
 }
@@ -63,7 +60,7 @@ fn part1(contents: &str) -> i32 {
         }
     }) {
         let mut path = vec![*src, *dst];
-        visit_adjacent_nodes(&system, &mut path, &mut paths, 1);
+        visit_adjacent_nodes(&system, &mut path, &mut paths, false);
     }
     paths.len() as i32
 }
@@ -81,7 +78,7 @@ fn part2(contents: &str) -> i32 {
         }
     }) {
         let mut path = vec![*src, *dst];
-        visit_adjacent_nodes(&system, &mut path, &mut paths, 2);
+        visit_adjacent_nodes(&system, &mut path, &mut paths, true);
     }
     paths.len() as i32
 }
