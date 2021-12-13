@@ -107,11 +107,41 @@ fn part1(contents: &str) -> i32 {
     flashes
 }
 
+fn part2(contents: &str) -> i32 {
+    let mut grid = parse_input(contents);
+    let mut flashes = 0;
+    let mut steps = 0;
+
+    let grid_size = 10;
+    loop {
+        let new_flash_count = flashes;
+        for i in 0..grid_size {
+            for j in 0..grid_size {
+                increase_energy(&mut grid, i, j, &mut flashes)
+            }
+        }
+        for (_, x) in grid.iter_mut() {
+            for (_, y) in x.iter_mut() {
+                if *y > 9 {
+                    *y = 0;
+                }
+            }
+        }
+        steps += 1;
+        if flashes - new_flash_count == (grid_size * grid_size) as i32 {
+            return steps;
+        }
+    }
+}
+
 fn main() {
     let contents = include_str!("../input.txt");
 
     let part1 = part1(contents);
     println!("part1: {}", part1);
+
+    let part2 = part2(contents);
+    println!("part2: {}", part2);
 }
 
 #[cfg(test)]
@@ -131,5 +161,20 @@ mod tests {
 4846848554
 5283751526";
         assert_eq!(part1(contents), 1656);
+    }
+
+    #[test]
+    fn test_part_2() {
+        let contents = "5483143223
+2745854711
+5264556173
+6141336146
+6357385478
+4167524645
+2176841721
+6882881134
+4846848554
+5283751526";
+        assert_eq!(part2(contents), 195);
     }
 }
