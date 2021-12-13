@@ -1,23 +1,58 @@
-fn parse_input(contents: &str) -> Vec<(&str, &str)> {
+type System<'a> = Vec<(&'a str, &'a str)>;
+
+fn parse_input(contents: &str) -> System {
     contents
         .lines()
         .map(|l| l.split_once('-').unwrap())
         .collect()
 }
 
+fn visit_adjacent_nodes<'a>(
+    system: &'a System,
+    path: &mut Vec<&'a str>,
+    paths: &mut Vec<Vec<&'a str>>,
+) {
+    let node = *path.clone().last().unwrap();
+    for (_, adj_dst) in system
+        .iter()
+        .filter_map(|(src, dst)| {
+            if *src == node {
+                Some((src, dst))
+            } else if *dst == node {
+                Some((dst, src))
+            } else {
+                None
+            }
+        })
+        .filter(|(_, dst)| !(***dst == dst.to_lowercase() && path.contains(dst)))
+    {
+        let mut new_path = path.clone();
+        new_path.push(adj_dst);
+
+        if *adj_dst == "end" {
+            paths.push(new_path);
+        } else {
+            visit_adjacent_nodes(system, &mut new_path, paths)
+        }
+    }
+}
+
 fn part1(contents: &str) -> i32 {
     let system = parse_input(contents);
     let mut paths: Vec<Vec<&str>> = vec![];
-    for (src, dst) in system.iter().filter(|(src, _)| *src == "start") {
+    for (src, dst) in system.iter().filter_map(|(src, dst)| {
+        if *src == "start" {
+            Some((src, dst))
+        } else if *dst == "start" {
+            Some((dst, src))
+        } else {
+            None
+        }
+    }) {
         let mut path = vec![*src, *dst];
-        println!("{}-{}", src, dst);
-        paths.push(path);
+        visit_adjacent_nodes(&system, &mut path, &mut paths);
     }
-
-    paths
-        .iter()
-        .filter(|p| p.iter().any(|c| *c == c.to_lowercase()))
-        .count() as i32
+    paths.len() as i32
 }
 
 fn main() {
@@ -40,7 +75,7 @@ A-b
 b-d
 A-end
 b-end";
-        assert_eq!(part1(contents), 6);
+        assert_eq!(part1(contents), 10);
     }
 
     #[test]
@@ -55,31 +90,29 @@ HN-end
 kj-sa
 kj-HN
 kj-dc";
-        assert_eq!(part1(contents), 7);
+        assert_eq!(part1(contents), 19);
     }
 
-    /*
-        #[test]
-        fn test_part_1_example_3() {
-            let contents = "fs-end
-    he-DX
-    fs-he
-    start-DX
-    pj-DX
-    end-zg
-    zg-sl
-    zg-pj
-    pj-he
-    RW-he
-    fs-DX
-    pj-RW
-    zg-RW
-    start-pj
-    he-WI
-    zg-he
-    pj-fs
-    start-RW";
-            assert_eq!(part1(contents), 226);
-        }
-        */
+    #[test]
+    fn test_part_1_example_3() {
+        let contents = "fs-end
+he-DX
+fs-he
+start-DX
+pj-DX
+end-zg
+zg-sl
+zg-pj
+pj-he
+RW-he
+fs-DX
+pj-RW
+zg-RW
+start-pj
+he-WI
+zg-he
+pj-fs
+start-RW";
+        assert_eq!(part1(contents), 226);
+    }
 }
