@@ -23,11 +23,8 @@ fn parse_input(contents: &str) -> (String, Vec<(&str, char)>) {
 //      Then work our way backup from the recursiveness and merge each half and
 //      put them in the cache
 
-fn run_steps(contents: &str, steps: i32) -> i64 {
-    let (mut template, rules) = parse_input(contents);
-    let mut cache: HashMap<&str, &str> = HashMap::new();
-
-    for step in 0..steps {
+fn search(template: &mut String, cache: &mut HashMap<String, String>, rules: &Vec<(&str, char)>) {
+    if template.len() <= 10 {
         for (idx, window) in template
             .chars()
             .collect::<Vec<char>>()
@@ -40,6 +37,65 @@ fn run_steps(contents: &str, steps: i32) -> i64 {
                 .unwrap();
             template.insert(idx + (1 + (1 * idx)), *chr);
         }
+
+        return;
+    }
+
+    if template.len() >= 1000000 {
+        if let Some(cached) = cache.get(template) {
+            *template = cached.to_string();
+            return;
+        }
+    }
+
+    let (first, second) = template.split_at(template.len() / 2);
+    let mut first = first.to_string();
+    let mut second = second.to_string();
+    search(&mut first, cache, rules);
+    search(&mut second, cache, rules);
+
+    let (_, chr) = rules
+        .iter()
+        .find(|r| {
+            r.0 == String::from_iter([
+                first.chars().last().unwrap(),
+                second.chars().next().unwrap(),
+            ])
+            .as_str()
+        })
+        .unwrap();
+
+    let new_template = format!("{}{}{}", first, chr, second);
+    if template.len() >= 1000000 {
+        cache.insert(template.to_string(), new_template.clone());
+    }
+
+    *template = new_template;
+}
+
+fn run_steps(contents: &str, steps: i32) -> i64 {
+    let (mut template, rules) = parse_input(contents);
+    let mut cache: HashMap<String, String> = HashMap::new();
+
+    for step in 0..steps {
+        search(&mut template, &mut cache, &rules);
+        cache.clear();
+        /*
+        let (first, second) = template.split_at(ctemplate.len() / 2);
+
+        for (idx, window) in template
+            .chars()
+            .collect::<Vec<char>>()
+            .windows(2)
+            .enumerate()
+        {
+            let (_, chr) = rules
+                .iter()
+                .find(|r| r.0 == String::from_iter(window).as_str())
+                .unwrap();
+            template.insert(idx + (1 + (1 * idx)), *chr);
+        }
+        */
         println!("Step {} --> {}", step + 1, template.len());
     }
 
