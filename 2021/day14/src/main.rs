@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-fn parse_input(contents: &str) -> (String, Vec<(&str, char)>) {
+fn parse_input(contents: &str) -> (Vec<String>, Vec<(&str, char)>) {
     let (template, rules) = contents.split_once("\n\n").unwrap();
 
     let rules: Vec<(&str, char)> = rules
@@ -11,7 +11,14 @@ fn parse_input(contents: &str) -> (String, Vec<(&str, char)>) {
         })
         .collect();
 
-    (template.to_string(), rules)
+    let f = template
+        .chars()
+        .collect::<Vec<char>>()
+        .windows(2)
+        .map(|w| String::from_iter(w))
+        .collect();
+
+    (f, rules)
 }
 
 // divide and conquer?
@@ -22,6 +29,11 @@ fn parse_input(contents: &str) -> (String, Vec<(&str, char)>) {
 //      or we get to two characters.
 //      Then work our way backup from the recursiveness and merge each half and
 //      put them in the cache
+//
+// ==========================================================
+//
+// A bunch of counters for each pair of characters that are increased by each rule for each
+// step????
 
 fn search(template: &mut String, cache: &mut HashMap<String, String>, rules: &Vec<(&str, char)>) {
     if template.len() <= 10 {
@@ -73,14 +85,67 @@ fn search(template: &mut String, cache: &mut HashMap<String, String>, rules: &Ve
     *template = new_template;
 }
 
+fn search2(
+    template: &mut Vec<String>,
+    cache: &mut HashMap<String, String>,
+    rules: &Vec<(&str, char)>,
+) {
+}
+
 fn run_steps(contents: &str, steps: i32) -> i64 {
     let (mut template, rules) = parse_input(contents);
     let mut cache: HashMap<String, String> = HashMap::new();
 
+    let mut counters: HashMap<String, i64> = HashMap::new();
+
+    for t in &template {
+        let e = counters.entry(t.clone()).or_insert(0);
+        *e += 1;
+    }
+
+    println!("{:?}", counters);
+
     for step in 0..steps {
-        search(&mut template, &mut cache, &rules);
-        cache.clear();
+        //search2(&mut template, &mut cache, &rules);
+
+        println!("");
+        println!("Step {}", step + 1);
+
+        let mut new_counters: HashMap<String, i64> = HashMap::new();
+
+        for (pair, chr) in &rules {
+            if counters.contains_key(*pair) {
+                let n = counters.get(*pair).unwrap();
+                let first = pair.chars().next().unwrap();
+                let second = pair.chars().nth(1).unwrap();
+
+                let first_str = String::from_iter([first, *chr]);
+                let first = new_counters.entry(first_str.clone()).or_insert(0);
+                *first += n;
+
+                let second_str = String::from_iter([*chr, second]);
+                let second = new_counters.entry(second_str.clone()).or_insert(0);
+                *second += n;
+
+                print!("{} + {} => {} & {}", pair, chr, first_str, second_str);
+
+                let entry = new_counters.entry(pair.to_string()).or_insert(0);
+                *entry -= n;
+                print!("\n");
+            }
+        }
+
+        println!("new: {:?}", new_counters);
+        for (k, v) in new_counters {
+            let entry = counters.entry(k.clone()).or_insert(0);
+            *entry += v;
+            if *entry <= 0 {
+                counters.remove(&k);
+            }
+        }
+
         /*
+        cache.clear();
         let (first, second) = template.split_at(ctemplate.len() / 2);
 
         for (idx, window) in template
@@ -96,9 +161,11 @@ fn run_steps(contents: &str, steps: i32) -> i64 {
             template.insert(idx + (1 + (1 * idx)), *chr);
         }
         */
-        println!("Step {} --> {}", step + 1, template.len());
+        println!("{:?}", counters);
+        println!("");
     }
 
+    /*
     let mut map: HashMap<char, i64> = HashMap::new();
     for c in template.chars() {
         let counter = map.entry(c).or_insert(0);
@@ -108,10 +175,12 @@ fn run_steps(contents: &str, steps: i32) -> i64 {
     let min = map.iter().min_by_key(|(_, v)| *v).unwrap().1;
     let max = map.iter().max_by_key(|(_, v)| *v).unwrap().1;
     max - min
+        */
+    0
 }
 
 fn part1(contents: &str) -> i64 {
-    run_steps(contents, 10)
+    run_steps(contents, 4)
 }
 
 fn part2(contents: &str) -> i64 {
