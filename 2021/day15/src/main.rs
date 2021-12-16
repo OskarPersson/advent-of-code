@@ -1,4 +1,13 @@
-use std::collections::HashMap;
+// Heavy inspiration taken from
+// * https://doc.rust-lang.org/std/collections/binary_heap/index.html
+// * https://github.com/AxlLind/AdventOfCode2021/blob/main/src/bin/15.rs
+//
+// Biggest mistake when trying to implement Dijsktra based on the BinaryHeap docs was putting the
+// position as the first element of each BinaryHeap entry instead of the cost. This lead to the
+// postions being compared on each pop, instead of the cost. Negative costs are used here because
+// of the BinaryHeap by default being a max-heap.
+
+use std::collections::{BinaryHeap, HashMap};
 
 fn parse_input(contents: &str) -> Vec<Vec<u32>> {
     contents
@@ -7,46 +16,58 @@ fn parse_input(contents: &str) -> Vec<Vec<u32>> {
         .collect()
 }
 
-fn find_shortest_path(
-    grid: &Vec<Vec<u32>>,
-    cache: &mut HashMap<(usize, usize), i32>,
-    r: usize,
-    c: usize,
-) -> Option<i32> {
-    if let Some(cached) = cache.get(&(c, r)) {
-        return Some(*cached);
-    }
-
+fn dijkstra(grid: &Vec<Vec<u32>>, r: usize, c: usize) -> Option<i32> {
     let rmax = grid.len() as i32;
     let cmax = grid.get(0).unwrap().len() as i32;
+    let goal = (rmax - 1, cmax - 1);
 
-    let mut paths = vec![];
-    let val = grid.get(r).unwrap().get(c).map(|v| *v as i32);
-    if r == (rmax as usize) - 1 && c == (cmax as usize) - 1 {
-        return val;
-    } else {
-        for dr in [0, 1] {
-            for dc in [0, 1] {
-                let rr = (r as i32) + dr;
-                let cc = (c as i32) + dc;
+    let mut dist: HashMap<(i32, i32), i32> = HashMap::new();
+
+    for (i, r) in grid.iter().enumerate() {
+        for (j, _) in r.iter().enumerate() {
+            dist.insert((i as i32, j as i32), i32::MAX);
+        }
+    }
+
+    let mut heap = BinaryHeap::new();
+    heap.push((0, (r as i32, c as i32)));
+
+    while let Some((cost, position)) = heap.pop() {
+        if position == goal {
+            return Some(-cost);
+        }
+
+        if -cost > *dist.get(&position).unwrap() {
+            continue;
+        }
+
+        for dc in [0, 1, -1] {
+            for dr in [0, 1, -1] {
+                let rr = (position.0 as i32) + dr;
+                let cc = (position.1 as i32) + dc;
                 if (dr != 0 && dc != 0) || (dr == 0 && dc == 0) {
                     continue;
                 }
-                if 0 <= rr && rr < rmax && 0 <= cc && cc < cmax {
-                    if let Some(p) = find_shortest_path(grid, cache, rr as usize, cc as usize) {
-                        let pv = val.unwrap() + p;
-                        paths.push(pv);
-                    }
+                if rr < 0 || rr >= rmax || cc < 0 || cc >= cmax {
+                    continue;
+                }
+
+                let edge_pos = (rr, cc);
+
+                let edge_cost =
+                    -cost + *grid.get(rr as usize).unwrap().get(cc as usize).unwrap() as i32;
+
+                if (edge_cost as i32) < *dist.get(&edge_pos).unwrap() {
+                    let dep = dist.get_mut(&edge_pos).unwrap();
+                    *dep = edge_cost;
+                    heap.push((-edge_cost, edge_pos));
                 }
             }
         }
     }
-    let min = paths.iter().min().map(|v| *v);
 
-    if let Some(m) = min {
-        cache.insert((c, r), m);
-    }
-    min
+    // Goal not reachable
+    None
 }
 
 fn part1(contents: &str) -> i32 {
@@ -54,8 +75,7 @@ fn part1(contents: &str) -> i32 {
     let start = grid.get_mut(0).unwrap().get_mut(0).unwrap();
     *start = 0;
 
-    let mut cache: HashMap<(usize, usize), i32> = HashMap::new();
-    find_shortest_path(&grid, &mut cache, 0 as usize, 0 as usize).unwrap()
+    dijkstra(&grid, 0, 0).unwrap()
 }
 
 fn part2(contents: &str) -> i32 {
@@ -84,8 +104,7 @@ fn part2(contents: &str) -> i32 {
     let start = biggergrid.get_mut(0).unwrap().get_mut(0).unwrap();
     *start = 0;
 
-    let mut cache: HashMap<(usize, usize), i32> = HashMap::new();
-    find_shortest_path(&biggergrid, &mut cache, 0 as usize, 0 as usize).unwrap()
+    dijkstra(&biggergrid, 0, 0).unwrap()
 }
 
 fn main() {
@@ -118,12 +137,14 @@ mod tests {
     }
 
     #[test]
-    fn test_minimal_3() {
+    fn test_part_1_minimal_3() {
         let contents = "118
 818
-188
-111";
-        assert_eq!(part1(contents), 6);
+118
+181
+111
+";
+        assert_eq!(part1(contents), 8);
     }
 
     #[test]
