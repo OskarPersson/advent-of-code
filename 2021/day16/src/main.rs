@@ -20,7 +20,6 @@ fn parse_input(contents: &str) -> String {
             'E' => "1110",
             'F' => "1111",
             _ => {
-                println!("'{}'", c);
                 unreachable!()
             }
         })
@@ -28,7 +27,7 @@ fn parse_input(contents: &str) -> String {
 }
 
 fn binary_str_to_int(s: &str) -> i32 {
-    i32::from_str_radix(&s, 2).unwrap()
+    i32::from_str_radix(s, 2).unwrap()
 }
 
 fn get_version(s: &str) -> i32 {
@@ -48,185 +47,63 @@ fn get_literal_value(s: &str) -> i32 {
     todo!()
 }
 
-fn get_sub_packets(s: &str) -> Vec<String> {
-    println!("get sub packets for: {}, version: {}", s, get_version(&s));
-    let mut packets = vec![];
-
-    let length_type_id = get_length_type_id(s);
-    match length_type_id {
-        0 => {
-            // 3 bits for version
-            // 3 bits for type ID
-            // 1 bit for length type ID
-            // 15 bits for total sub packet length
-            let sub_packets_length =
-                usize::from_str_radix(&s.chars().skip(3 + 3 + 1).take(15).collect::<String>(), 2)
-                    .unwrap();
-
-            let mut sub_packet = String::from("");
-            let mut s_index = 3 + 3 + 1 + 15;
-            for (idx, c) in s
-                .chars()
-                .skip(3 + 3 + 1 + 15)
-                .take(sub_packets_length)
-                .enumerate()
-            {
-                sub_packet.push(c);
-                s_index += 1;
-                if sub_packet.len() < 7 {
-                    continue;
-                }
-
-                let sub_type_id = get_type_id(&sub_packet);
-
-                match sub_type_id {
-                    4 => {
-                        // find groups of five until one group begins with 0
-                        if (sub_packet.len() - 6) % 5 == 0
-                            && sub_packet.chars().nth(sub_packet.len() - 5).unwrap() == '0'
-                        {
-                            packets.push(sub_packet.clone());
-                            sub_packet.clear();
-                        }
-                    }
-                    _ => {
-                        let sub_type_length_id = get_length_type_id(&sub_packet);
-
-                        match sub_type_length_id {
-                            0 => {
-                                if sub_packet.len() < 3 + 3 + 1 + 15 {
-                                    continue;
-                                }
-                                let sub_sub_packets_length = usize::from_str_radix(
-                                    &sub_packet
-                                        .chars()
-                                        .skip(3 + 3 + 1)
-                                        .take(15)
-                                        .collect::<String>(),
-                                    2,
-                                )
-                                .unwrap();
-                                if sub_packet.len() == 3 + 3 + 1 + 15 + sub_sub_packets_length {
-                                    packets.push(sub_packet.clone());
-                                    sub_packet.clear();
-                                }
-                            }
-                            1 => {
-                                if sub_packet.len() == 7 {
-                                    let mut subs = get_sub_packets(
-                                        &s.chars().skip(s_index - 7).collect::<String>(),
-                                    );
-                                    packets.push(s.chars().skip(s_index - 7).collect::<String>())
-                                }
-                            }
-                            _ => unreachable!(),
-                        }
-                    }
-                }
+fn get_sub_packets(s: &str) -> (String, Vec<String>) {
+    if get_type_id(s) == 4 {
+        let mut pointer = 6;
+        loop {
+            let group = s.chars().skip(pointer).take(5).collect::<String>();
+            pointer += 5;
+            if group.starts_with('0') {
+                return (s.chars().take(pointer).collect::<String>(), vec![]);
             }
         }
-        1 => {
-            // 3 bits for version
-            // 3 bits for type ID
-            // 1 bit for length type ID
-            // 11 bits for number of sub packets
-            let number_of_sub_packets =
-                usize::from_str_radix(&s.chars().skip(3 + 3 + 1).take(11).collect::<String>(), 2)
-                    .unwrap();
-
-            let mut sub_packets = vec![];
-            let mut sub_packet = String::from("");
-            let mut s_index = 3 + 3 + 1 + 11;
-            for c in s.chars().skip(3 + 3 + 1 + 11) {
-                if sub_packets.len() == number_of_sub_packets {
-                    // do same changes above??????
-                    packets.push(s.chars().skip(s_index - 7).collect::<String>());
-                    break;
-                }
-
-                sub_packet.push(c);
-                s_index += 1;
-
-                if sub_packet.len() < 7 {
-                    continue;
-                }
-
-                let sub_type_id = get_type_id(&sub_packet);
-
-                match sub_type_id {
-                    4 => {
-                        // find groups of five until one group begins with 0
-                        if (sub_packet.len() - 6) % 5 == 0
-                            && sub_packet.chars().nth(sub_packet.len() - 5).unwrap() == '0'
-                        {
-                            packets.push(sub_packet.clone());
-                            sub_packet.clear();
-                        }
-                    }
-                    _ => {
-                        let sub_type_length_id = get_length_type_id(&sub_packet);
-
-                        match sub_type_length_id {
-                            0 => {
-                                if sub_packet.len() < 3 + 3 + 1 + 15 {
-                                    continue;
-                                }
-                                let sub_sub_packets_length = usize::from_str_radix(
-                                    &sub_packet
-                                        .chars()
-                                        .skip(3 + 3 + 1)
-                                        .take(15)
-                                        .collect::<String>(),
-                                    2,
-                                )
-                                .unwrap();
-                                if sub_packet.len() == 3 + 3 + 1 + 15 + sub_sub_packets_length {
-                                    packets.push(sub_packet.clone());
-                                    sub_packet.clear();
-                                }
-                            }
-                            1 => {
-                                if sub_packet.len() == 7 {
-                                    let mut subs = get_sub_packets(
-                                        &s.chars().skip(s_index - 7).collect::<String>(),
-                                    );
-                                    sub_packets.append(&mut subs);
-                                }
-                            }
-                            _ => unreachable!(),
-                        }
-                    }
-                }
-            }
-        }
-        _ => unreachable!(),
     }
-    packets
+
+    let mut pointer = 0;
+    let mut packets = vec![];
+    let length_type_id = get_length_type_id(s);
+    pointer += 7;
+
+    if length_type_id == 0 {
+        let sub_packets_length =
+            usize::from_str_radix(&s.chars().skip(3 + 3 + 1).take(15).collect::<String>(), 2)
+                .unwrap();
+
+        pointer += 15;
+        let mut pointer2 = 0;
+
+        while pointer2 < sub_packets_length {
+            let sub_str = s.chars().skip(pointer + pointer2).collect::<String>();
+            let (sub_packet, _) = get_sub_packets(&sub_str);
+            let sub_packet_len = sub_packet.clone().len();
+            packets.push(sub_packet.clone());
+            pointer2 += sub_packet_len;
+        }
+        pointer += pointer2;
+    } else {
+        let number_of_sub_packets =
+            usize::from_str_radix(&s.chars().skip(3 + 3 + 1).take(11).collect::<String>(), 2)
+                .unwrap();
+
+        pointer += 11;
+        while packets.len() < number_of_sub_packets {
+            let sub_str = s.chars().skip(pointer).collect::<String>();
+            let (sub_packet, _) = get_sub_packets(&sub_str);
+            packets.push(sub_packet.clone());
+            pointer += sub_packet.len();
+        }
+    }
+    return (s.chars().take(pointer).collect(), packets);
 }
 
 fn get_packet_version_sum(s: &str) -> i32 {
-    let version = get_version(&s);
-    let type_id = get_type_id(&s);
-    let d = s.clone();
+    let version = get_version(s);
+    let type_id = get_type_id(s);
 
     match type_id {
-        4 => {
-            println!("\n================================\n");
-
-            println!("{:?}", s);
-            println!("version: {:?}", version);
-            println!("type_id: {:?}", type_id);
-            version
-        }
+        4 => version,
         _ => {
-            println!("\n================================\n");
-
-            println!("{:?}", d);
-            println!("version: {:?}", version);
-            println!("type_id: {:?}", type_id);
-            println!("length type_id: {:?}", get_length_type_id(&s));
-            let sub_packets = get_sub_packets(&s);
-            println!("sub packets: {:?}", sub_packets);
+            let (_, sub_packets) = get_sub_packets(s);
             version
                 + sub_packets
                     .iter()
