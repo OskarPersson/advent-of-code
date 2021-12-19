@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use regex::Regex;
 
 fn parse_input(contents: &str) -> (i32, i32, i32, i32) {
@@ -16,7 +18,7 @@ struct Probe {
     pos_y: i32,
     vel_x: i32,
     vel_y: i32,
-    pub trajectory: Vec<(i32, i32)>,
+    trajectory: Vec<(i32, i32)>,
 }
 
 impl Probe {
@@ -61,10 +63,11 @@ impl Probe {
 
         self.pos_x += self.vel_x;
         self.pos_y += self.vel_y;
-        if self.vel_x > 0 {
-            self.vel_x -= 1;
-        } else if self.vel_x < 0 {
-            self.vel_x += 1;
+
+        match self.vel_x.cmp(&0) {
+            Ordering::Greater => self.vel_x -= 1,
+            Ordering::Less => self.vel_x += 1,
+            Ordering::Equal => {}
         }
         self.vel_y -= 1;
 
@@ -107,7 +110,7 @@ fn part2(contents: &str) -> i32 {
             }
         }
     }
-    return successful_velocities;
+    successful_velocities
 }
 
 fn main() {
