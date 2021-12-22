@@ -1,11 +1,11 @@
 use regex::{Captures, Regex};
 use serde_json::Value;
 
-fn parse_input(contents: &str) -> Vec<Value> {
-    contents
-        .lines()
-        .map(|l| serde_json::from_str(l).unwrap())
-        .collect()
+#[macro_use]
+extern crate lazy_static;
+
+fn parse_input(contents: &str) -> Vec<String> {
+    contents.lines().map(|s| s.to_string()).collect()
 }
 
 fn magnitude(v: &Value) -> i64 {
@@ -16,8 +16,7 @@ fn magnitude(v: &Value) -> i64 {
     }
 }
 
-fn explode(v: &mut Value) -> Value {
-    let mut s = v.to_string();
+fn explode(s: &str) -> String {
     let mut level = 0;
 
     for i in 0..s.len() {
@@ -37,8 +36,12 @@ fn explode(v: &mut Value) -> Value {
             .skip(i + 1)
             .take_while(|c| *c != ']')
             .collect::<String>();
-        let re = Regex::new(r"^(\d+),(\d+)$").unwrap();
-        if !re.is_match(&substr) {
+
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"^(\d+),(\d+)$").unwrap();
+        }
+
+        if !RE.is_match(&substr) {
             continue;
         }
 
@@ -48,10 +51,12 @@ fn explode(v: &mut Value) -> Value {
             pair.1.parse::<i32>().unwrap(),
         );
 
-        let regular_re = Regex::new(r"\d+").unwrap();
+        lazy_static! {
+            static ref REGULAR_RE: Regex = Regex::new(r"\d+").unwrap();
+        }
 
         let before_s = s.chars().take(i).collect::<String>();
-        let before_s = regular_re
+        let before_s = REGULAR_RE
             .replace(
                 &before_s.chars().rev().collect::<String>(),
                 |caps: &Captures| {
@@ -65,7 +70,7 @@ fn explode(v: &mut Value) -> Value {
                             .unwrap()
                             + pair.0
                     );
-                    format!("{}", c2.chars().rev().collect::<String>())
+                    c2.chars().rev().collect::<String>()
                 },
             )
             .to_string()
@@ -74,51 +79,46 @@ fn explode(v: &mut Value) -> Value {
             .collect::<String>();
 
         let after_s = s.chars().skip(i + substr.len() + 2).collect::<String>();
-        let after_s = regular_re
+        let after_s = REGULAR_RE
             .replace(&after_s, |caps: &Captures| {
                 format!("{}", caps[0].parse::<i32>().unwrap() + pair.1,)
             })
             .to_string();
 
-        s = format!("{}0{}", before_s, after_s);
-        break;
+        return format!("{}0{}", before_s, after_s);
     }
-    serde_json::from_str(&s).unwrap()
+    s.to_string()
 }
 
-fn split(v: &mut Value) -> Value {
-    let mut s = v.to_string();
+fn split(s: &str) -> String {
     let re = Regex::new(r"(\d{2,})").unwrap();
-    s = re
-        .replace(&s, |caps: &Captures| {
-            let n = caps[1].parse::<i32>().unwrap();
-            format!("[{},{}]", n / 2, (n + 1) / 2)
-        })
-        .to_string();
-
-    serde_json::from_str(&s).unwrap()
+    re.replace(s, |caps: &Captures| {
+        let n = caps[1].parse::<i32>().unwrap();
+        format!("[{},{}]", n / 2, (n + 1) / 2)
+    })
+    .to_string()
 }
 
-fn reduce(v: &Value) -> Value {
-    let mut prev = v.clone();
-    let mut new = explode(&mut prev);
+fn reduce(s: String) -> String {
+    let mut prev = s;
+    let mut new = explode(&prev);
     if new == prev {
-        new = split(&mut prev)
+        new = split(&prev)
     }
 
     while new != prev {
         prev = new;
-        new = explode(&mut prev);
+        new = explode(&prev);
         if new == prev {
-            new = split(&mut prev)
+            new = split(&prev)
         }
     }
 
-    new.clone()
+    new
 }
 
-fn add(a: &Value, b: &Value) -> Value {
-    reduce(&Value::Array(vec![a.clone(), b.clone()]))
+fn add(a: &str, b: &str) -> String {
+    reduce(format!("[{},{}]", a, b))
 }
 
 fn part1(contents: &str) -> i64 {
@@ -126,11 +126,29 @@ fn part1(contents: &str) -> i64 {
     let mut values_iter = values.iter();
 
     let mut sum = add(values_iter.next().unwrap(), values_iter.next().unwrap());
-    while let Some(v) = values_iter.next() {
+    for v in values_iter {
         sum = add(&sum, v);
     }
 
-    magnitude(&sum)
+    let v: Value = serde_json::from_str(&sum).unwrap();
+    magnitude(&v)
+}
+
+fn part2(contents: &str) -> i64 {
+    let values = parse_input(contents);
+    let mut magnitudes: Vec<i64> = vec![];
+
+    for i in 0..values.len() {
+        for j in i + 1..values.len() {
+            magnitudes.push(magnitude(
+                &serde_json::from_str(&add(&values[i], &values[j])).unwrap(),
+            ));
+            magnitudes.push(magnitude(
+                &serde_json::from_str(&add(&values[j], &values[i])).unwrap(),
+            ));
+        }
+    }
+    *magnitudes.iter().max().unwrap()
 }
 
 fn main() {
@@ -138,6 +156,9 @@ fn main() {
 
     let part1 = part1(contents);
     println!("part1: {}", part1);
+
+    let part2 = part2(contents);
+    println!("part2: {}", part2);
 }
 
 #[cfg(test)]
@@ -146,13 +167,19 @@ mod tests {
 
     #[test]
     fn test_magnitude_1() {
-        assert_eq!(magnitude(&parse_input("[[1,2],[[3,4],5]]")[0]), 143);
+        assert_eq!(
+            magnitude(&serde_json::from_str(&parse_input("[[1,2],[[3,4],5]]")[0]).unwrap()),
+            143
+        );
     }
 
     #[test]
     fn test_magnitude_2() {
         assert_eq!(
-            magnitude(&parse_input("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]")[0]),
+            magnitude(
+                &serde_json::from_str(&parse_input("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]")[0])
+                    .unwrap()
+            ),
             1384
         );
     }
@@ -160,7 +187,9 @@ mod tests {
     #[test]
     fn test_magnitude_3() {
         assert_eq!(
-            magnitude(&parse_input("[[[[1,1],[2,2]],[3,3]],[4,4]]")[0]),
+            magnitude(
+                &serde_json::from_str(&parse_input("[[[[1,1],[2,2]],[3,3]],[4,4]]")[0]).unwrap()
+            ),
             445
         );
     }
@@ -168,7 +197,9 @@ mod tests {
     #[test]
     fn test_magnitude_4() {
         assert_eq!(
-            magnitude(&parse_input("[[[[3,0],[5,3]],[4,4]],[5,5]]")[0]),
+            magnitude(
+                &serde_json::from_str(&parse_input("[[[[3,0],[5,3]],[4,4]],[5,5]]")[0]).unwrap()
+            ),
             791
         );
     }
@@ -176,7 +207,9 @@ mod tests {
     #[test]
     fn test_magnitude_5() {
         assert_eq!(
-            magnitude(&parse_input("[[[[5,0],[7,4]],[5,5]],[6,6]]")[0]),
+            magnitude(
+                &serde_json::from_str(&parse_input("[[[[5,0],[7,4]],[5,5]],[6,6]]")[0]).unwrap()
+            ),
             1137
         );
     }
@@ -184,7 +217,12 @@ mod tests {
     #[test]
     fn test_magnitude_6() {
         assert_eq!(
-            magnitude(&parse_input("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]")[0]),
+            magnitude(
+                &serde_json::from_str(
+                    &parse_input("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]")[0]
+                )
+                .unwrap()
+            ),
             3488
         );
     }
@@ -303,7 +341,7 @@ mod tests {
     #[test]
     fn test_reduce_1() {
         assert_eq!(
-            reduce(&parse_input("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]")[0]),
+            reduce(parse_input("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]")[0].clone()),
             parse_input("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]")[0]
         );
     }
@@ -343,6 +381,25 @@ mod tests {
 [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"
             ),
             4140
+        );
+    }
+
+    #[test]
+    fn test_part_2_example_1() {
+        assert_eq!(
+            part2(
+                "[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
+[[[5,[2,8]],4],[5,[[9,9],0]]]
+[6,[[[6,2],[5,6]],[[7,6],[4,7]]]]
+[[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]
+[[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]
+[[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]
+[[[[5,4],[7,7]],8],[[8,3],8]]
+[[9,3],[[9,9],[6,[4,9]]]]
+[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
+[[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"
+            ),
+            3993
         );
     }
 }
