@@ -1,28 +1,10 @@
 fn parse_input(contents: &str) -> (Vec<Vec<char>>, String) {
     let algorithm = contents.lines().map(|l| l.to_string()).take(1).collect();
-    let mut input = vec![];
-    let input_rows = contents.lines().skip(2).count();
-    let input_cols = contents.lines().nth(3).unwrap().len();
-
-    for _ in 0..=input_rows {
-        input.push(vec!['.'; input_cols * 3]);
-    }
-
-    for line in contents.lines().skip(2) {
-        let mut l = vec!['.'; input_cols];
-        for c in line.chars() {
-            l.push(c);
-        }
-        for c in vec!['.'; input_cols] {
-            l.push(c);
-        }
-        input.push(l);
-    }
-
-    for _ in 0..=input_rows {
-        input.push(vec!['.'; input_cols * 3]);
-    }
-
+    let input = contents
+        .lines()
+        .skip(2)
+        .map(|l| l.chars().collect())
+        .collect();
     (input, algorithm)
 }
 
@@ -58,6 +40,7 @@ fn get_algo_idx_for_pixel(input: &Vec<Vec<char>>, i: i32, j: i32) -> i32 {
 }
 
 fn enhance(input: &Vec<Vec<char>>, algorithm: &str) -> Vec<Vec<char>> {
+    let input = extend(input);
     let mut output = vec![];
     for i in 0..input.len() {
         let mut l = vec![];
@@ -67,6 +50,38 @@ fn enhance(input: &Vec<Vec<char>>, algorithm: &str) -> Vec<Vec<char>> {
         }
         output.push(l);
     }
+    println!("");
+    for i in &output {
+        for j in i {
+            print!("{}", j);
+        }
+        println!("");
+    }
+    output
+}
+
+fn extend(input: &Vec<Vec<char>>) -> Vec<Vec<char>> {
+    let c = match input[0][0] {
+        '#' => '#',
+        '.' => '.',
+        _ => unreachable!(),
+    };
+    let line_len = input[0].len() + 6;
+    let mut output = vec![vec![c; line_len]; 3];
+    for i in 0..input.len() {
+        let mut l = vec![];
+        l.extend(input[i].iter());
+        l.insert(0, c);
+        l.insert(0, c);
+        l.insert(0, c);
+        l.push(c);
+        l.push(c);
+        l.push(c);
+        output.push(l);
+    }
+    output.push(vec![c; line_len]);
+    output.push(vec![c; line_len]);
+    output.push(vec![c; line_len]);
     println!("");
     for i in &output {
         for j in i {
