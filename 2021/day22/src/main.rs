@@ -2,7 +2,15 @@ use std::collections::HashSet;
 
 use regex::Regex;
 
-type Cuboid = ((i64, i64), (i64, i64), (i64, i64));
+#[derive(Clone, Eq, PartialEq, Hash)]
+struct Cuboid {
+    pub x_min: i64,
+    pub x_max: i64,
+    pub y_min: i64,
+    pub y_max: i64,
+    pub z_min: i64,
+    pub z_max: i64,
+}
 
 fn parse_input(contents: &str) -> Vec<(bool, Cuboid)> {
     let re = Regex::new(r"x=(-?\d+)..(-?\d+),y=(-?\d+)..(-?\d+),z=(-?\d+)..(-?\d+)").unwrap();
@@ -14,20 +22,14 @@ fn parse_input(contents: &str) -> Vec<(bool, Cuboid)> {
             let caps = re.captures(l).unwrap();
             (
                 on,
-                (
-                    (
-                        caps.get(1).unwrap().as_str().parse::<i64>().unwrap(),
-                        caps.get(2).unwrap().as_str().parse::<i64>().unwrap(),
-                    ),
-                    (
-                        caps.get(3).unwrap().as_str().parse::<i64>().unwrap(),
-                        caps.get(4).unwrap().as_str().parse::<i64>().unwrap(),
-                    ),
-                    (
-                        caps.get(5).unwrap().as_str().parse::<i64>().unwrap(),
-                        caps.get(6).unwrap().as_str().parse::<i64>().unwrap(),
-                    ),
-                ),
+                (Cuboid {
+                    x_min: caps.get(1).unwrap().as_str().parse::<i64>().unwrap(),
+                    x_max: caps.get(2).unwrap().as_str().parse::<i64>().unwrap(),
+                    y_min: caps.get(3).unwrap().as_str().parse::<i64>().unwrap(),
+                    y_max: caps.get(4).unwrap().as_str().parse::<i64>().unwrap(),
+                    z_min: caps.get(5).unwrap().as_str().parse::<i64>().unwrap(),
+                    z_max: caps.get(6).unwrap().as_str().parse::<i64>().unwrap(),
+                }),
             )
         })
         .collect()
@@ -35,12 +37,86 @@ fn parse_input(contents: &str) -> Vec<(bool, Cuboid)> {
 
 fn part1(contents: &str) -> i64 {
     let cuboids = parse_input(contents);
-    let mut ons: HashSet<(i64, i64, i64)> = HashSet::new();
-    for (on, ((x_min, x_max), (y_min, y_max), (z_min, z_max))) in cuboids {
-        if x_min < -50 || x_max > 50 || y_min < -50 || y_max > 50 || z_min < -50 || z_max > 50 {
+    let mut ons: HashSet<Cuboid> = HashSet::new();
+    let mut i = 0;
+    for (on, cuboid) in cuboids {
+        i += 1;
+        if cuboid.x_min < -50
+            || cuboid.x_max > 50
+            || cuboid.y_min < -50
+            || cuboid.y_max > 50
+            || cuboid.z_min < -50
+            || cuboid.z_max > 50
+        {
             continue;
         }
-        for x in x_min..=x_max {
+
+        if on {
+            if ons.is_empty() {
+                ons.insert(cuboid);
+                continue;
+            }
+
+            if let Some(existing) = ons.clone().iter().find(|existing| {
+                println!(
+                    "existing: {},{},{},{},{},{}",
+                    existing.x_min,
+                    existing.x_max,
+                    existing.y_min,
+                    existing.y_max,
+                    existing.z_min,
+                    existing.z_max,
+                );
+                println!(
+                    "new: {},{},{},{},{},{}",
+                    cuboid.x_min,
+                    cuboid.x_max,
+                    cuboid.y_min,
+                    cuboid.y_max,
+                    cuboid.z_min,
+                    cuboid.z_max,
+                );
+                (((cuboid.x_min <= existing.x_min && existing.x_min <= cuboid.x_max)
+                    || (cuboid.x_max >= existing.x_max && existing.x_max >= cuboid.x_min))
+                    && ((cuboid.y_min <= existing.y_min && existing.y_min <= cuboid.y_max)
+                        || (cuboid.y_max >= existing.y_max && existing.y_max >= cuboid.y_min))
+                    && ((cuboid.z_min <= existing.z_min && existing.z_min <= cuboid.z_max)
+                        || (cuboid.z_max >= existing.z_max && existing.z_max >= cuboid.z_min)))
+                    || (((existing.x_min <= cuboid.x_min && cuboid.x_min <= existing.x_max)
+                        || (existing.x_max >= cuboid.x_max && cuboid.x_max >= existing.x_min))
+                        && ((existing.y_min <= cuboid.y_min && cuboid.y_min <= existing.y_max)
+                            || (existing.y_max >= cuboid.y_max && cuboid.y_max >= existing.y_min))
+                        && ((existing.z_min <= cuboid.z_min && cuboid.z_min <= existing.z_max)
+                            || (existing.z_max >= cuboid.z_max && cuboid.z_max >= existing.z_min)))
+            }) {
+                println!("replace!");
+                ons.remove(existing);
+                ons.insert(Cuboid {
+                    x_min: existing.x_min.min(cuboid.x_min),
+                    x_max: existing.x_max.max(cuboid.x_max),
+                    y_min: existing.y_min.min(cuboid.y_min),
+                    y_max: existing.y_max.max(cuboid.y_max),
+                    z_min: existing.z_min.min(cuboid.z_min),
+                    z_max: existing.z_max.max(cuboid.z_max),
+                });
+            } else {
+                println!("insert!");
+                ons.insert(Cuboid {
+                    x_min: cuboid.x_min,
+                    x_max: cuboid.x_max,
+                    y_min: cuboid.y_min,
+                    y_max: cuboid.y_max,
+                    z_min: cuboid.z_min,
+                    z_max: cuboid.z_max,
+                });
+            }
+        }
+
+        if i == 3 {
+            break;
+        }
+
+        /*for x in x_min..=x_max {
             for y in y_min..=y_max {
                 for z in z_min..=z_max {
                     if on {
@@ -50,12 +126,27 @@ fn part1(contents: &str) -> i64 {
                     }
                 }
             }
-        }
+        }*/
     }
-    ons.len() as i64
+
+    for o in &ons {
+        println!(
+            "{},{},{},{},{},{}",
+            o.x_min, o.x_max, o.y_min, o.y_max, o.z_min, o.z_max,
+        );
+    }
+
+    ons.iter()
+        .map(|o| {
+            ((o.x_max - o.x_min) + 1).abs()
+                * ((o.y_max - o.y_min) + 1).abs()
+                * ((o.z_max - o.z_min) + 1).abs()
+        })
+        .sum()
 }
 
 fn part2(contents: &str) -> i64 {
+    /*
     let cuboids = parse_input(contents);
     let mut ons: HashSet<(i64, i64, i64)> = HashSet::new();
     for (on, ((x_min, x_max), (y_min, y_max), (z_min, z_max))) in cuboids {
@@ -72,6 +163,8 @@ fn part2(contents: &str) -> i64 {
         }
     }
     ons.len() as i64
+    */
+    0
 }
 
 fn main() {
