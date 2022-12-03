@@ -9,20 +9,12 @@ int Priority(char c)
 
 char Duplicate2(char[] first, char[] second)
 {
-   foreach (var f in first)
-   {
-      if (second.Contains(f)) return f;
-   }
-   throw new NotImplementedException($"{first} not in {second}");
+   return first.Intersect(second).First();
 }
 
 char Duplicate3(char[] first, char[] second, char[] third)
 {
-   foreach (var f in first)
-   {
-      if (second.Contains(f) && third.Contains(f)) return f;
-   }
-   throw new NotImplementedException($"{first} not in {second} && not in {third}");
+   return first.Intersect(second).Intersect(third).First();
 }
 
 int Part1(IEnumerable<string> lines)
@@ -44,11 +36,7 @@ int Part1(IEnumerable<string> lines)
 int Part2(IEnumerable<string> lines)
 {
    var sums = new List<int>();
-   var grps = lines
-      .Select((x, i) => new {Index = i, Value = x})
-      .GroupBy(x => x.Index / 3)
-      .Select(x => x.Select(v => v.Value).ToList())
-      .ToList();;
+   var grps = lines.Chunk(3).ToList();;
    foreach (var grp in grps)
    {
 
