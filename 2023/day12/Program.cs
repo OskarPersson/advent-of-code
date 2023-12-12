@@ -5,97 +5,78 @@ var lines = File.ReadAllLines(Path.Combine(AppDomain.CurrentDomain.BaseDirectory
 var sum = 0;
 for (var lineidx = 0; lineidx < lines.Count; lineidx++)
 {
+    var localsum = 0;
     var line = lines[lineidx];
+
+    var line1 = line.Split(" ")[0];
+    var line2 = line.Split(" ")[1];
+
+    var line1list = new List<string>();
+    for (var i = 0; i < 5; i++)
+    {
+        line1list.Add(line1);
+    }
+    line = $"{string.Join("?", line1list)} {line2}";
+
     var records = line.Split(" ")[0].ToCharArray().ToList();
     var groups = line.Split(" ")[1].Split(",").Select(s => int.Parse(s)).ToList();
 
+    var pattern = "^\\.*";
 
-    var pattern = @"(#+)";
-    var matches = Regex.Matches(line, pattern);
-    foreach (Match match in matches)
+    foreach (var grp in groups)
     {
-        for (int i = 0; i < groups.Count; i++)
-        {
-            if (groups[i] == match.Length)
-            {
-                groups.RemoveAt(i);
-                line = $"{line.Substring(0, match.Index)}{new string('.', match.Length)}{line.Substring(match.Index + match.Length)}";
-                break;
-            }
-        }
+        pattern += $"#{{{grp}}}\\.+";
     }
 
+    pattern += "$";
 
-    var arrs = 1;
+    pattern = pattern.Replace("+$", "*$");
 
-    var n = 0;
-    for (int ci = 0; ci < records.Count; ci++)
+
+    var vars = GetVariations(line.Split(" ")[0]);
+
+    foreach (var v in vars)
     {
-        var c = records[ci];
-        if (c is '.' or '#')
+        if (Regex.IsMatch(v, pattern))
         {
-            if (n == 0)
-            {
-                if (c == '#')
-                {
-                    if (groups.Count > 0)
-                    {
-                        groups[0] = groups[0] - 1;
-                        if (groups[0] == 0)
-                        {
-                            groups.RemoveAt(0);
-                        }
-                    }
-                }
-
-                continue;
-            }
-
-            var subgrp = new List<int>();
-
-            while (subgrp.Sum() < n - 1)
-            {
-                if (c == '.')
-                {
-                    if (subgrp.Sum() + groups[0] <= n - 1)
-                    {
-                        subgrp.Add(groups[0]);
-                        groups.RemoveAt(0);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                else if (c == '#')
-                {
-                    subgrp.Add(1);
-                }
-            }
-
-            if (subgrp.Count > 0)
-            {
-                arrs *= n / subgrp.Sum();
-            }
-            else
-            {
-                arrs *= 1;
-            }
-
-            n = 0;
-            continue;
-        }
-
-        if (c == '?')
-        {
-            n++;
+            localsum++;
+            sum++;
         }
     }
-
-    Console.WriteLine($"{line} => {arrs}");
-    sum += arrs;
 }
 
 
 Console.WriteLine();
 Console.WriteLine(sum);
+
+
+List<string> GetVariations(string input)
+{
+    // Get all variations of the input string where each ? is replaced with either . or #
+
+    var variations = new List<string>();
+    var questionMarks = input.Count(c => c == '?');
+    var max = Math.Pow(2, questionMarks);
+    for (var i = 0; i < max; i++)
+    {
+        var binary = Convert.ToString(i, 2).PadLeft(questionMarks, '0');
+        var variation = input;
+        foreach (var bit in binary)
+        {
+            variation = ReplaceFirst(variation, "?", bit == '0' ? "." : "#");
+        }
+        variations.Add(variation);
+    }
+    return variations;
+
+}
+
+string ReplaceFirst(string text, string search, string replace)
+{
+    int pos = text.IndexOf(search);
+    if (pos < 0)
+    {
+        return text;
+    }
+    return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+}
