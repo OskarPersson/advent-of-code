@@ -12,14 +12,19 @@ for (var lineidx = 0; lineidx < lines.Count; lineidx++)
     var line2 = line.Split(" ")[1];
 
     var line1list = new List<string>();
+    var line2list = new List<string>();
     for (var i = 0; i < 5; i++)
     {
         line1list.Add(line1);
+        line2list.Add(line2);
     }
-    line = $"{string.Join("?", line1list)} {line2}";
+    Console.WriteLine(line);
+    //line = $"{string.Join("?", line1list)} {string.Join(",", line2list)}";
+    //Console.WriteLine(line);
 
     var records = line.Split(" ")[0].ToCharArray().ToList();
     var groups = line.Split(" ")[1].Split(",").Select(s => int.Parse(s)).ToList();
+    
 
     var pattern = "^\\.*";
 
@@ -43,6 +48,8 @@ for (var lineidx = 0; lineidx < lines.Count; lineidx++)
             sum++;
         }
     }
+    Console.WriteLine(localsum);
+    Console.WriteLine();
 }
 
 
